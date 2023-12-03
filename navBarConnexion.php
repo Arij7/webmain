@@ -12,9 +12,15 @@
          <ul class="sous">
             <?php
             if(isset($_SESSION['login'])){
-               echo "<li><a href='../compte/admin_accueil.php'>Profil</a></li>
-               <li><a href='ajout.php'>Ajouter</a></li>
-               <li><a href='../connexion/deconnexion.php'>Déconnexion</a></li>";
+               if($_SESSION['statut']=='A'){
+                  echo "<li><a href='../compte/admin_accueil.php?'>Profil</a></li>";
+               }
+               echo"
+               <li><a href='../compte/admin_actualite.php?#admin'>Actualités</a></li>
+               <li><a href='../compte/admin_selection.php?#admin'>Sélections</a></li>
+               <li><a href='../compte/admin_element.php?#admin'>Éléments</a></li>
+               <li><a href='../compte/admin_lien.php?#admin'>Liens</a></li>
+               <li><a id='deconnexion' href='../connexion/deconnexion.php?#admin'>Déconnexion</a></li>";
             } else{
                echo "<li><a href='../connexion/inscription.php'>Inscription</a></li>
                <li><a href='../connexion/session.php'>Connexion</a></li>";

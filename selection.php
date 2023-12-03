@@ -46,10 +46,17 @@ $mysqli->close();
             <ul class="sous">
                <?php
                if(isset($_SESSION['login'])){
-                  echo "<li><a href='../compte/admin_accueil.php'>Profil</a></li>
-                  <li><a href='../ajout.php'>Ajouter</a></li>
-                  <li><a href='../connexion/deconnexion.php'>Déconnexion</a></li>";
-               } else{
+                  if($_SESSION['statut']=='A'){
+                     echo "<li><a href='../compte/admin_accueil.php?'>Profil</a></li>";
+                  }
+                  echo"
+                  <li><a href='../compte/admin_actualite.php?#admin'>Actualités</a></li>
+                  <li><a href='../compte/admin_selection.php?#admin'>Sélections</a></li>
+                  <li><a href='../compte/admin_element.php?#admin'>Éléments</a></li>
+                  <li><a href='../compte/admin_lien.php?#admin'>Liens</a></li>
+                  <li><a id='deconnexion' href='../connexion/deconnexion.php?#admin'>Déconnexion</a></li>";
+               }
+               else{
                   echo "<li><a href='../connexion/inscription.php'>Inscription</a></li>
                   <li><a href='../connexion/session.php'>Connexion</a></li>";
                }
@@ -65,6 +72,7 @@ $mysqli->close();
          <tr>
             <th>Titre</th>
             <th>Résumé</th>
+            <th>Nombre d'élément</th>
             <th>Date</th>
             <th>Pseudo</th>
             <th></th>
@@ -85,7 +93,14 @@ $mysqli->close();
                                   LIMIT 1;";
                $resFirstEleSel = $mysqli->query($reqFirstEleSel);
 
-               if(!$resFirstEleSel){
+               //Nb élément d'une sélection
+               $reqNbEle = "SELECT ele_numero FROM tj_relie_rel
+                            JOIN t_element_ele USING(ele_numero)
+                            WHERE sel_numero = '$sel[sel_numero]'
+                            AND ele_etat='A';";
+               $resNbEle = $mysqli->query($reqNbEle);
+
+               if(!$resFirstEleSel or !$resNbEle){
                   echo "Error: La requête a echoué \n";
                   echo "Errno: " . $mysqli->errno . "\n";
                   echo "Error: " . $mysqli->error . "\n";
@@ -93,6 +108,7 @@ $mysqli->close();
                }
                else{
                   $firstEleSel = $resFirstEleSel->fetch_array(MYSQLI_ASSOC);
+                  $nbEle=$resNbEle->num_rows;
                }
                $mysqli->close();
 
@@ -108,6 +124,7 @@ $mysqli->close();
                echo "
                      <td>".$sel['sel_intitule']."</td>
                      <td class='resume'>".$sel['sel_texteIntro']."</td>
+                     <td class='tabNbEle'>".$nbEle."</td>
                      <td>".$sel['sel_date']."</td>
                      <td>".$sel['com_pseudo']."</td>
                      <td><a href='affichageSelection.php?sel_id=".$sel['sel_numero']."&elt_id=".$firstEleSel['ele_numero']."#ancre'><div class='oeil'></div></a></td>

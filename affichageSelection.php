@@ -30,10 +30,17 @@ session_start();
             <ul class="sous">
                <?php
                if(isset($_SESSION['login'])){
-                  echo "<li><a href='../compte/admin_accueil.php'>Profil</a></li>
-                  <li><a href='../ajout.php'>Ajouter</a></li>
-                  <li><a href='../connexion/deconnexion.php'>Déconnexion</a></li>";
-               } else{
+                  if($_SESSION['statut']=='A'){
+                     echo "<li><a href='../compte/admin_accueil.php?'>Profil</a></li>";
+                  }
+                  echo"
+                  <li><a href='../compte/admin_actualite.php?#admin'>Actualités</a></li>
+                  <li><a href='../compte/admin_selection.php?#admin'>Sélections</a></li>
+                  <li><a href='../compte/admin_element.php?#admin'>Éléments</a></li>
+                  <li><a href='../compte/admin_lien.php?#admin'>Liens</a></li>
+                  <li><a id='deconnexion' href='../connexion/deconnexion.php?#admin'>Déconnexion</a></li>";
+               }
+               else{
                   echo "<li><a href='../connexion/inscription.php'>Inscription</a></li>
                   <li><a href='../connexion/session.php'>Connexion</a></li>";
                }
@@ -50,6 +57,7 @@ session_start();
    $nbRowsPrec=0;
    $nbRowsSuiv=0;
    $nbEle=0;
+   $error=0;
 
    if(!empty($_GET['elt_id']) and is_int((int)$_GET['elt_id']) and is_int((int)$_GET['sel_id']) and isset($_GET['sel_id']) and isset($_GET['elt_id'])){
       $sel_id=(int)htmlspecialchars($_GET['sel_id']);
@@ -73,6 +81,21 @@ session_start();
       }
       else{
          $ele = $resEle->fetch_array(MYSQLI_ASSOC);
+         if($ele['ele_etat']=='D'){$nbEle=0;$error=1;}
+      }
+
+      //Liens
+      $reqLien = "SELECT lie_titre, lie_url, lie_auteur, lie_date
+                  FROM t_lien_lie
+                  WHERE ele_numero=$elt_id";
+      $resLien = $mysqli->query($reqLien);
+      $nbLien = $resLien->num_rows;
+
+      if(!$resLien){
+         echo "Error: La requête a echoué \n";
+         echo "Errno: " . $mysqli->errno . "\n";
+         echo "Error: " . $mysqli->error . "\n";
+         exit();
       }
 
       //Element suivant :
@@ -81,6 +104,7 @@ session_start();
                      JOIN t_selection_sel USING(sel_numero)
                      WHERE sel_numero = $sel_id
                      AND ele_numero > $elt_id
+                     AND ele_etat='A'
                      LIMIT 1";
       $resEleSuiv = $mysqli->query($reqEleSuiv);
       $nbRowsSuiv = $resEleSuiv->num_rows;
@@ -101,6 +125,7 @@ session_start();
                      JOIN t_selection_sel USING(sel_numero)
                      WHERE sel_numero = $sel_id
                      AND ele_numero < $elt_id
+                     AND ele_etat='A'
                      ORDER BY ele_numero DESC
                      LIMIT 1";
       $resElePrec = $mysqli->query($reqElePrec);
@@ -120,7 +145,8 @@ session_start();
       $reqCptEle = "SELECT ele_numero
                     FROM t_element_ele
                     JOIN tj_relie_rel USING(ele_numero)
-                    WHERE sel_numero='$_GET[sel_id]'";
+                    WHERE sel_numero='$_GET[sel_id]'
+                    AND ele_etat='A'";
       $resCptEle = $mysqli->query($reqCptEle);
 
       if(!$resCptEle){
@@ -142,12 +168,17 @@ session_start();
             <section>
                <article class='imgUser'>
                   <div class='headerPublic'>
-                     <a href='#'>".$ele['com_pseudo']."</a>
                      <h3>".$ele['ele_intitule']."</h3>
                   </div>
                   <img src='../../assets/img/".$ele['ele_fichierImage']."' alt='img1'>
                   <p>".$ele['ele_descriptif']."</p>
-                  <p>".$ele['ele_date']."</p>
+                  <p>".$ele['ele_date']."</p>";
+                  if($nbLien!=0){
+                     while ($lien = $resLien->fetch_assoc()) {
+                        echo "<p><img class='logoLien' src='../../assets/logos/lien.png' alt='imgLien'><a id='lienImg' href='".$lien['lie_url']."'>".$lien['lie_titre']." : ".$lien['lie_auteur']." le ".$lien['lie_date']."</a></p>";
+                     }
+                  }
+                  echo "
                </article>
             </section>";
       }
@@ -172,6 +203,14 @@ session_start();
             }
          }
          echo "</section>";
+      }
+      elseif($error){
+         if($nbRowsSuiv){
+            header("Location: affichageSelection.php?sel_id=".$sel_id."&elt_id=".$eleSuiv['ele_numero']."#ancre");
+         }
+         else{
+            echo "<h1 class='emptySel'>La sélection est vide</h1>";
+         }
       }
       elseif(!isset($_GET['elt_id']) or !isset($_GET['sel_id'])){
          echo "<h1 class='emptySel'>Vous devez mentionner une sélection et un élément</h1>";
